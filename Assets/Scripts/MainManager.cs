@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,7 +11,9 @@ public class MainManager : MonoBehaviour
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
+    public Text bestScore;
 
+    public PlayerInfo.Player savedPlayer;
     public Text ScoreText;
     public GameObject GameOverText;
     
@@ -22,6 +26,8 @@ public class MainManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        LoadData();
+        bestScore.text = "Best Score: " + savedPlayer.name + ": " + savedPlayer.score;
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -40,6 +46,8 @@ public class MainManager : MonoBehaviour
 
     private void Update()
     {
+        PlayerInfo.Instance.currentPlayer.score = m_Points;
+       // bestScore.text = "Best Score: " + PlayerInfo.Instance.currentPlayer.name + " :"+ PlayerInfo.Instance.currentPlayer.score;
         if (!m_Started)
         {
             if (Input.GetKeyDown(KeyCode.Space))
@@ -55,6 +63,10 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            if(savedPlayer == null || PlayerInfo.Instance.currentPlayer.score > savedPlayer.score)
+            {
+                SaveScore();
+            }
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -72,5 +84,20 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+    public void SaveScore()
+    {
+        string json = JsonUtility.ToJson(PlayerInfo.Instance.currentPlayer);
+        File.WriteAllText(Application.persistentDataPath + "/bricksave.json", json);
+    }
+
+    public void LoadData()
+    {
+        string path = Application.persistentDataPath + "/bricksave.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            savedPlayer = JsonUtility.FromJson<PlayerInfo.Player>(json);
+        }
     }
 }
